@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reserva d'espais · Societat Joventut Musical d'Albal</title>
+  <link rel="stylesheet" href="/static/catalogue.css?v=20260928-3">
+</head>
+<body>
+  <a class="skip-link" href="#catalogue-section">Ves als espais</a>
+  {% set feature_icons = {'Piano':'piano','Espill':'mirror','Pissarra Digital':'digital-board','Pissarra':'board','Micròfon de gravació':'microphone','Altaveus':'speakers','Projector':'projector'} %}
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <symbol id="icon-piano" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M6 5v8m4-8v8m4-8v8m4-8v8M2.5 13h19M8 13v6m8-6v6"/></symbol>
+    <symbol id="icon-mirror" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8 10l3-3m-3 8 8-8m-5 11h5"/></symbol>
+    <symbol id="icon-digital-board" viewBox="0 0 24 24"><rect x="3" y="3.5" width="18" height="14" rx="1"/><path d="M8 21h8m-4-3.5V21M6.5 14h11"/></symbol>
+    <symbol id="icon-board" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="12" rx=".5"/><path d="M8 20h8m-4-4v4M6.5 13.5h11"/></symbol>
+    <symbol id="icon-microphone" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0m-6 6v4m-4 0h8"/></symbol>
+    <symbol id="icon-speakers" viewBox="0 0 24 24"><rect x="2.5" y="4" width="8" height="16" rx="1"/><rect x="13.5" y="4" width="8" height="16" rx="1"/><circle cx="6.5" cy="14" r="2"/><circle cx="17.5" cy="14" r="2"/><path d="M6.5 8h.01m11 0h.01"/></symbol>
+    <symbol id="icon-projector" viewBox="0 0 24 24"><rect x="3" y="9" width="15" height="9" rx="1.5"/><circle cx="14" cy="13.5" r="2"/><path d="M6 18v2m9-2v2m4-11 2-2M4 6 2.5 4.5M10 6V3"/></symbol>
+  </svg>
+  <div class="site-shell">
+    <header class="site-header">
+      <a href="/" class="logo-link" aria-label="Societat Joventut Musical d'Albal: inici"><img src="/static/logo-sjma.svg" alt="Societat Joventut Musical d'Albal"></a>
+      <span class="header-location">Reserva d'espais <span aria-hidden="true">-</span> Seu de la Societat Joventut Musical d'Albal</span>
+    </header>
+
+    <main>
+      <section class="organization" aria-labelledby="organization-title">
+        <h1 id="organization-title">Un espai per a <span>fer música.</span></h1><p>Tria l'aula que necessites i reserva-la sense crear cap compte.</p>
+        <details class="organization-info" id="organization-info"><summary>Informació de la Societat <span aria-hidden="true">＋</span></summary><div class="info-grid"><div><strong>Societat Joventut Musical d'Albal</strong><p>Casa de la Cultura d'Albal - 2n Pis<br>Carrer de Sant Carles 80 · 46470 Albal, València</p></div><div><strong>Contacte</strong><p><a href="mailto:secretaria@sjmalbal.com">secretaria@sjmalbal.com</a></p><p>Responsable del contingut: Secretaria SJMA.</p></div><div><strong>Ubicació</strong><p><a href="https://www.openstreetmap.org/search?query=Carrer%20de%20Sant%20Carles%2080%2C%20Albal" target="_blank" rel="noopener">Veure la seu al mapa ↗</a></p></div></div></details>
+      </section>
+
+      <section id="catalogue-section" aria-labelledby="catalogue-title">
+        <div class="section-heading"><div><span class="section-index">01 / ESPAIS</span><h2 id="catalogue-title">Troba la teua aula</h2></div><p>Sales d'assaig de la SJMA</p></div>
+        <div class="filters" role="search" aria-label="Filtres d'aules">
+          <label class="filter-field filter-search">Busca per nom o característica<input id="filter-search" type="search" placeholder="P. ex. piano, llenguatge, percussió…" autocomplete="off"></label>
+          <label class="filter-field">Data<input id="filter-date" type="date"></label>
+          <label class="filter-field">Duració<select id="filter-duration"><option value="">Qualsevol duració</option>{% for minutes in range(30, 301, 30) %}<option value="{{ minutes }}">{{ minutes // 60 }} h {{ '%02d'|format(minutes % 60) }} min</option>{% endfor %}</select></label>
+          <label class="filter-field filter-from">Des de les<input id="filter-from" type="time" step="1800"></label>
+          <label class="filter-field filter-until">Fins a les<input id="filter-until" type="time" step="1800"></label>
+          <div class="feature-bar"><span>CARACTERÍSTIQUES</span><div class="feature-buttons">{% for feature in ['Piano','Espill','Pissarra Digital','Pissarra','Micròfon de gravació'] %}<button type="button" class="feature-filter" data-feature="{{ feature }}" aria-pressed="false"><svg class="feature-icon" aria-hidden="true"><use href="#icon-{{ feature_icons[feature] }}"></use></svg>{{ feature }}</button>{% endfor %}<details class="more-filters"><summary>Tots els filtres</summary><div class="more-panel"><strong>Característiques dels espais</strong>{% for feature in ['Piano','Espill','Pissarra Digital','Pissarra','Micròfon de gravació','Altaveus','Projector'] %}<button type="button" class="feature-filter" data-feature="{{ feature }}" aria-pressed="false"><svg class="feature-icon" aria-hidden="true"><use href="#icon-{{ feature_icons[feature] }}"></use></svg>{{ feature }}</button>{% endfor %}<button type="button" id="reset-filters" class="reset-filters">Restablir filtres</button></div></details></div></div>
+        </div>
+        <div class="results-bar"><span id="result-count" role="status" aria-live="polite">{{ rooms|length }} espais</span><div class="view-buttons" role="group" aria-label="Vista"><button type="button" data-view="grid" aria-pressed="true">Quadrícula</button><button type="button" data-view="map" aria-pressed="false">Mapa</button><button type="button" data-view="calendar" aria-pressed="false">Calendari</button></div></div>
+        <div id="catalogue-message" class="notice" hidden></div>
+        <div id="room-grid" class="room-grid">
+          {% for room in rooms %}<article class="room-card" data-room-id="{{ room.id }}">
+            <button type="button" class="room-open" data-open-room="{{ room.id }}" aria-label="Veure i reservar {{ room.title }}">
+              {% if room.photos|length %}<img src="{{ room.photos[0] }}" alt="Fotografia de {{ room.title }}" loading="lazy">{% else %}<span class="no-photo"><span class="no-photo-mark" aria-hidden="true">▥</span>Fotografia pendent</span>{% endif %}
+              <span class="room-content"><strong>{{ room.title }}</strong><span class="room-features">{% if room.features %}{% for feature in room.features %}<span class="room-feature"><svg class="feature-icon" aria-hidden="true"><use href="#icon-{{ feature_icons[feature] }}"></use></svg>{{ feature }}</span>{% endfor %}{% else %}Sala d'assaig{% endif %}</span><span class="room-footer"><span>De {{ min_minutes }} minuts a {{ max_minutes // 60 }} hores</span><b>Veure l'aula ↗</b></span></span>
+            </button>
+          </article>{% endfor %}
+        </div>
+        <div id="map-view" class="map-view" hidden><div class="map-copy"><h3>Casa de la Cultura d'Albal - 2n Pis</h3><p>Carrer de Sant Carles 80, 46470 Albal</p><p>Els espais es troben a la mateixa seu. Selecciona'n un per consultar-ne la disponibilitat.</p><p><a href="https://www.openstreetmap.org/?mlat=39.397475&amp;mlon=-0.4090423#map=18/39.397475/-0.4090423" target="_blank" rel="noopener">Obri el mapa ↗</a></p><div id="map-room-list" class="map-room-list"></div></div><iframe title="Mapa amb un marcador a la Casa de la Cultura d'Albal" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=-0.4140423%2C39.394475%2C-0.4040423%2C39.400475&amp;layer=mapnik&amp;marker=39.397475%2C-0.4090423"></iframe></div>
+        <div id="calendar-view" class="calendar-view" hidden><p>Ocupació de les aules per a la data seleccionada. Els blocs foscos estan ocupats; selecciona una aula per reservar-la.</p><div class="calendar-scroll"><div id="calendar-content"></div></div></div>
+      </section>
+
+      <section id="room-detail" class="detail" hidden aria-labelledby="detail-title">
+        <button type="button" id="back-to-catalogue" class="back-button">← Totes les aules</button>
+        <div class="detail-layout"><div class="detail-main"><div id="detail-photo" class="detail-photo"></div><div id="detail-thumbnails" class="detail-thumbnails"></div><span class="section-index">02 / RESERVA</span><h2 id="detail-title"></h2><p id="detail-features" class="detail-features"></p><div class="detail-address"><strong>Adreça</strong><p>Casa de la Cultura d'Albal - 2n Pis<br>Carrer de Sant Carles 80 · 46470 Albal, València</p><a href="https://www.openstreetmap.org/search?query=Carrer%20de%20Sant%20Carles%2080%2C%20Albal" target="_blank" rel="noopener">Veure al mapa ↗</a></div></div>
+          <div class="booking-panel{% if not bookings_enabled %} is-closed{% endif %}"><h3>{% if bookings_enabled %}Selecciona el teu horari{% else %}Reserves temporalment tancades{% endif %}</h3><p>{% if bookings_enabled %}De {{ min_minutes }} minuts a {{ max_minutes // 60 }} hores · Europe/Madrid{% else %}Pots consultar les aules i la disponibilitat. Obrirem les reserves ací prompte.{% endif %}</p><label>Data<input id="booking-date" type="date"></label><div class="time-fields"><label>Hora de començament<select id="booking-start"><option value="">Selecciona una hora</option></select></label><label>Hora de finalització<select id="booking-end"><option value="">Selecciona una hora</option></select></label></div><p id="time-feedback" class="time-feedback" aria-live="polite"></p><form id="booking-form"><label>Nota per a la reserva <span class="optional">(opcional)</span><textarea id="booking-note" maxlength="1000" rows="3" placeholder="Què necessites per a l'assaig?"></textarea></label><div class="form-divider"></div><h4>Les teues dades</h4><div class="person-fields"><label>Nom<input id="booking-name" autocomplete="given-name" maxlength="100" required></label><label>Cognoms<input id="booking-last-name" autocomplete="family-name" maxlength="100" required></label></div><label>Correu electrònic<input id="booking-email" type="email" autocomplete="email" required></label><div class="person-fields"><label>Instrument<input id="booking-instrument" maxlength="100" required></label><label>Sóc<select id="booking-relation" required><option value="">Selecciona una opció</option><option>Soci/sòcia</option><option>Músic/a</option><option>Alumne/a</option><option>Professor/a</option><option>Altres</option></select></label></div><label class="privacy-check"><input id="booking-privacy" type="checkbox" required><span>He llegit la informació sobre el tractament de les meues dades per a gestionar aquesta reserva.</span></label><details class="privacy-info"><summary>Informació de privacitat</summary><p>La Societat Joventut Musical d'Albal utilitzarà les dades del formulari per a gestionar la reserva, enviar-te la confirmació per correu i avisar secretaria. Pots contactar amb <a href="mailto:secretaria@sjmalbal.com">secretaria@sjmalbal.com</a> per a consultar-ne el tractament. Aquesta informació s'haurà de revisar abans de publicar el servei.</p></details><label class="privacy-check"><input id="booking-remember" type="checkbox"><span>Guarda les meues dades en este navegador per a la pròxima reserva.</span></label><button id="submit-booking" class="primary-button" type="submit">Sol·licitar la reserva <span aria-hidden="true">↗</span></button></form><div id="booking-result" class="booking-result" role="status" aria-live="polite" hidden></div></div>
+        </div>
+      </section>
+    </main>
+    <footer><span>Societat Joventut Musical d'Albal</span><span>Carrer de Sant Carles 80 · 46470 Albal</span><a href="mailto:secretaria@sjmalbal.com">Contacte ↗</a><a class="admin-entry" href="/admin/login">Accés administració</a></footer>
+  </div>
+  <script>window.SJMA_ROOMS = {{ rooms|tojson }}; window.SJMA_MAX_DAYS = {{ max_days|tojson }};</script>
+  <script src="/static/catalogue.js" type="module"></script>
+</body>
+</html>

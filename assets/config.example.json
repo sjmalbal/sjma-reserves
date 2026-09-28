@@ -1,0 +1,13 @@
+{
+  "timezone": "Europe/Madrid",
+  "opening_hour": 0,
+  "closing_hour": 24,
+  "slot_minutes": 60,
+  "slot_step_minutes": 30,
+  "min_minutes": 30,
+  "max_minutes": 300,
+  "max_days_ahead": 90,
+  "auth_mode": "oauth",
+  "organizer_email": "",
+  "rooms": []
+}

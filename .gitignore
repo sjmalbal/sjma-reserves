@@ -1,0 +1,17 @@
+node_modules/
+dist/
+public/
+supabase/.temp/
+supabase/config.toml
+.private/
+.env
+.env.*
+*.sqlite3
+*.sqlite3-*
+*.log
+*.jsonl
+client_secret*.json
+token-*.json
+service-account*.json
+supabase-admin.json
+.DS_Store

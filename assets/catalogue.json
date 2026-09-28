@@ -1,0 +1,115 @@
+{
+  "aula-2": {
+    "title": "Aula 2 | Instrument i Piano",
+    "features": [
+      "Piano",
+      "Pissarra"
+    ],
+    "photos": [
+      "/static/rooms/aula-2-1.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-2-piano-lklvuewg4qqhvvdt",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "aula-3": {
+    "title": "Aula 3 | Instrument",
+    "features": [],
+    "photos": [
+      "/static/rooms/aula-3-1.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-3-pjhsuwttdi",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "aula-4": {
+    "title": "Aula 4 | Instrument",
+    "features": [],
+    "photos": [
+      "/static/rooms/aula-4-1.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-4-g2mkfsmofc",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "aula-5": {
+    "title": "Aula 5 | Cantonera",
+    "features": [
+      "Espill",
+      "Pissarra"
+    ],
+    "photos": [
+      "/static/rooms/aula-5-1.jpg",
+      "/static/rooms/aula-5-2.jpg",
+      "/static/rooms/aula-5-3.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-5-cantonera-yc3gzo6t0gyq4dxp",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "aula-7": {
+    "title": "Aula 7 | Llenguatge",
+    "features": [
+      "Piano",
+      "Pissarra Digital"
+    ],
+    "photos": [
+      "/static/rooms/aula-7-1.jpg",
+      "/static/rooms/aula-7-2.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-7-llenguatge-piano-pantalla-lykfdrlobbxkimnx",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "aula-9": {
+    "title": "Aula 9 | Llenguatge",
+    "features": [
+      "Piano",
+      "Pissarra Digital"
+    ],
+    "photos": [
+      "/static/rooms/aula-9-1.jpg",
+      "/static/rooms/aula-9-2.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-9-llenguatge-w4ufrun2ha",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "aula-11": {
+    "title": "Aula 11 | Llenguatge",
+    "features": [
+      "Piano",
+      "Pissarra"
+    ],
+    "photos": [
+      "/static/rooms/aula-11-1.jpg",
+      "/static/rooms/aula-11-2.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-11-drzwiooydz",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "aula-percussio": {
+    "title": "Aula de percussió",
+    "features": [],
+    "photos": [
+      "/static/rooms/aula-percussio-1.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/aula-de-percussio-dgiuqwvbgs",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "sala-assajos": {
+    "title": "Sala d'Assajos",
+    "features": [
+      "Micròfon de gravació",
+      "Pissarra",
+      "Altaveus",
+      "Projector",
+      "Piano"
+    ],
+    "photos": [
+      "/static/rooms/sala-assajos-1.jpg"
+    ],
+    "source_url": "https://anny.co/es/book/sala-dassajos-sd4d1nx7inppod4k",
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  },
+  "sala-professors": {
+    "title": "Sala de professors",
+    "features": [],
+    "photos": [],
+    "address": "Carrer de Sant Carles 80, 46470 Albal"
+  }
+}

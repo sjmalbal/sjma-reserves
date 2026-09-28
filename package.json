@@ -1,0 +1,40 @@
+{
+  "name": "sjma-reserves",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.server.json && vite build",
+    "start": "node dist/server.js",
+    "authorize": "tsx src/authorize.ts",
+    "retry-mail": "tsx src/retryMail.ts",
+    "migrate-supabase": "tsx src/migrateSupabase.ts",
+    "probe": "tsx src/probe.ts",
+    "probe-full": "tsx src/probeFull.ts",
+    "test": "node --import tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/formbody": "^9.0.0",
+    "@fastify/multipart": "^9.4.0",
+    "@fastify/static": "^10.1.4",
+    "@supabase/supabase-js": "^2.117.2",
+    "better-sqlite3": "^12.11.1",
+    "fastify": "^5.12.5",
+    "google-auth-library": "^10.9.1",
+    "luxon": "^3.7.2",
+    "nunjucks": "^3.2.4",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/luxon": "^3.7.5",
+    "@types/node": "^22.20.4",
+    "@types/nunjucks": "^3.2.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6"
+  }
+}

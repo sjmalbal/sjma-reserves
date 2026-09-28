@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accés a l’administració · SJMA</title>
+  <link rel="stylesheet" href="/static/admin.css?v=20260928-3">
+</head>
+<body>
+  <header class="topbar"><a href="/" aria-label="Torna a les reserves"><img src="/static/logo-sjma.svg" alt="Societat Joventut Musical d'Albal"></a><a href="/">Veure les reserves ↗</a></header>
+  <main class="login-main">
+    <section class="login-card" aria-labelledby="login-title">
+      <p class="eyebrow">ADMINISTRACIÓ · RESERVA D’ESPAIS</p>
+      <h1 id="login-title">Accés al panell</h1>
+      <p>Entra amb el teu compte de Google Workspace de la SJMA. Només poden accedir els correus marcats com a administradors.</p>
+      {% if error %}<p class="login-error" role="alert">{{ error }}</p>{% endif %}
+      <a class="login-button" href="/admin/auth/start">Continua amb Google <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+</body>
+</html>
