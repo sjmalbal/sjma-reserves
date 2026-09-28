@@ -77,6 +77,12 @@ legend{font-size:13px}
 .publish{align-items:flex-start;gap:10px;line-height:1.45}
 .publish input{width:20px;height:20px;margin:0;flex:none;transform:translateY(1px)}
 .publish span{display:block}
+.fields{grid-template-columns:minmax(0,2fr) minmax(150px,.7fr) minmax(220px,1fr)}
+.order-field{display:block;font-size:13px;font-weight:700}
+.order-field input{display:block;width:100%;min-height:46px;margin-top:6px;padding:10px 12px;border:1px solid #c8beb2;background:#fbfaf8;font-size:15px}
+.order-field span{display:block;margin-top:5px;color:var(--muted);font-size:11px;font-weight:400}
+.order-field input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+@media(max-width:800px){.fields{grid-template-columns:1fr}}
 .photos-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
 .photos-heading h3{font:700 15px/1.3 Montserrat,sans-serif;margin:0 0 3px}
 .photos-heading p{font-size:12px;color:var(--muted);margin:0}

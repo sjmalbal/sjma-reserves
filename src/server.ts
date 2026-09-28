@@ -224,6 +224,7 @@ export async function buildApp(options: AppOptions = {}) {
         title: first('title'), features: fields.get('features') ?? [],
         removePhotos: fields.get('remove_photo') ?? [],
         published: first('published') === 'on', uploads, coverPhoto: first('cover_photo'),
+        sortOrder: Number(first('sort_order')),
       });
       return reply.code(303).header('Location', `/admin?saved=1#resource-${request.params.key}`).send();
     } catch (error) {

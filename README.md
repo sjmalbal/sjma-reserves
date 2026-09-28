@@ -2,7 +2,7 @@
 
 Aplicació en **TypeScript**: servidor Node/Fastify, pàgina pública compilada amb Vite, PostgreSQL de Supabase per a les dades de producció i connexió directa amb els recursos de Google Workspace. El panell mostra els recursos existents de Workspace i permet editar-ne el nom públic, les característiques, les fotos i la publicació. La reserva convida el recurs a un esdeveniment del compte organitzador; quan el recurs l'accepta, envia un correu a la persona que ha reservat i un altre a secretaria.
 
-La web està publicada a <https://espais.sjmalbal.com> amb HTTPS. El formulari de reserva continua desactivat fins que la SJMA aprove les regles i la informació de privacitat. L'estat i la configuració del desplegament estan en [deploy/README.md](deploy/README.md).
+La web està publicada a <https://espais.sjmalbal.com> amb HTTPS. Les reserves públiques estan activades amb els valors configurables actuals. L'estat i la configuració del desplegament estan en [deploy/README.md](deploy/README.md).
 
 ## Posada en marxa local
 
@@ -18,7 +18,7 @@ npm start
 
 La web s'obri a <http://127.0.0.1:8766/> i l'administració a <http://127.0.0.1:8766/admin>. El detall d'una aula té una ruta pròpia, per exemple `/aules/aula-2`, i admet recàrrega i navegació amb Arrere/Endavant. El servidor només escolta en localhost. `SJMA_PORT` canvia el port. Les reserves públiques estan desactivades per defecte; `SJMA_ENABLE_BOOKINGS=1 npm start` les activa **i pot crear esdeveniments i enviar correus reals**. El 28-09-2026 se'n va fer una prova real controlada en un port temporal, sense activar el servidor públic habitual.
 
-El panell d'administració té una pàgina de login pròpia. La identitat s'autoritza amb el compte de Google Workspace de la SJMA i el servidor consulta `empleados.emp_admin` en Supabase per al correu verificat abans de crear la sessió i en cada accés al panell. Sols entra si hi ha exactament una fitxa amb `emp_admin = true`. La sessió caduca al cap de 8 hores, es pot tancar des del panell i els formularis tenen protecció CSRF. L'antiga contrasenya d'administració ja no dona accés. El panell permet ampliar fotos, llevar-les amb confirmació i triar la portada; l'elecció de portada s'aplica en guardar la fitxa.
+El panell d'administració té una pàgina de login pròpia. La identitat s'autoritza amb el compte de Google Workspace de la SJMA i el servidor consulta `empleados.emp_admin` en Supabase per al correu verificat abans de crear la sessió i en cada accés al panell. Sols entra si hi ha exactament una fitxa amb `emp_admin = true`. La sessió caduca al cap de 8 hores, es pot tancar des del panell i els formularis tenen protecció CSRF. L'antiga contrasenya d'administració ja no dona accés. El panell permet ampliar fotos, llevar-les amb confirmació, triar la portada i configurar un número d'ordre per a cada recurs; el número menor apareix primer en la web pública.
 
 ## Configuració i dades
 
@@ -44,4 +44,4 @@ npm run authorize -- write
 
 ## Estat de verificació
 
-El 28-09-2026 es va comprovar una reserva real de l'Aula 2 (29-09-2026, 21:00–21:30): acceptació del recurs, ocupació visible en FreeBusy, estat confirmat en Supabase i acceptació de l'enviament dels dos avisos per Gmail API. La reserva i l'esdeveniment es van eliminar i la franja va tornar a quedar lliure; també es va enviar l'avís de neteja a secretaria. L'estat `sent` acredita que Gmail API ha acceptat l'enviament, no que els missatges hagen arribat a la safata dels destinataris. La compilació, les 8 proves automatitzades i una prova de navegador d'escriptori i mòbil també passen. El 29-09-2026 un administrador va confirmar l'accés al panell públic després del retorn OAuth i es va comprovar una sessió activa en Supabase. Abans d'activar reserves públiques cal tancar les regles de reserva, el tractament de cancel·lacions i els textos de privacitat.
+El 28-09-2026 es va comprovar una reserva real de l'Aula 2 (29-09-2026, 21:00–21:30): acceptació del recurs, ocupació visible en FreeBusy, estat confirmat en Supabase i acceptació de l'enviament dels dos avisos per Gmail API. La reserva i l'esdeveniment es van eliminar i la franja va tornar a quedar lliure; també es va enviar l'avís de neteja a secretaria. L'estat `sent` acredita que Gmail API ha acceptat l'enviament, no que els missatges hagen arribat a la safata dels destinataris. El 29-09-2026 un administrador va confirmar l'accés al panell públic després del retorn OAuth i es va comprovar una sessió activa en Supabase.

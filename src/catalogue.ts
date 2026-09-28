@@ -18,15 +18,20 @@ interface Metadata {
   address?: string;
   source_url?: string;
   resource_email?: string;
+  sort_order?: number;
 }
 type MetadataMap = Record<string, Metadata>;
 export interface AdminRow {
   key: string; room_id: string; workspace_name: string; email: string;
-  published: boolean; title: string; features: string[]; photos: string[];
+  published: boolean; title: string; features: string[]; photos: string[]; sortOrder: number;
 }
 export interface ResourceEdit {
   title: string; features: string[]; removePhotos: string[];
-  published: boolean; uploads: Buffer[]; coverPhoto?: string;
+  published: boolean; uploads: Buffer[]; coverPhoto?: string; sortOrder: number;
+}
+
+export function validateSortOrder(value: number): void {
+  if (!Number.isInteger(value) || value < 1 || value > 9999) throw new RangeError('L’ordre ha de ser un número enter entre 1 i 9999');
 }
 
 export function keyFor(resource: CalendarResource): string {
@@ -47,38 +52,40 @@ export class Catalogue {
 
   publicRooms(): PublicRoom[] {
     const base = this.metadata(), overrides = this.overrides();
-    return this.settings.rooms.map(configured => {
+    return this.settings.rooms.map((configured,index) => {
       const metadata = { ...base[configured.id], ...overrides[configured.id] };
       return {
         ...configured,
+        sortOrder: metadata.sort_order ?? (index+1)*10,
         title: metadata.title || configured.name,
         features: metadata.features ?? [],
         photos: metadata.photos ?? [],
         address: metadata.address,
       };
-    });
+    }).sort((a,b)=>a.sortOrder-b.sortOrder || a.id.localeCompare(b.id,'ca'));
   }
 
   async adminRows(): Promise<AdminRow[]> {
     const resources = await this.workspace.listResources();
     const base = this.metadata(), overrides = this.overrides();
-    const configured = new Map(this.settings.rooms.map(room => [room.email.toLowerCase(), room]));
+    const configured = new Map(this.settings.rooms.map((room,index) => [room.email.toLowerCase(), {room,index}] as const));
     const savedIds = new Map(Object.entries(overrides)
       .filter(([, value]) => value.resource_email)
       .map(([id, value]) => [value.resource_email!.toLowerCase(), id]));
     return resources.filter(resource => resource.resourceEmail).map(resource => {
       const email = resource.resourceEmail;
-      const room = configured.get(email.toLowerCase());
-      const id = room?.id || savedIds.get(email.toLowerCase()) || `workspace-${keyFor(resource)}`;
+      const configuredRoom = configured.get(email.toLowerCase());
+      const id = configuredRoom?.room.id || savedIds.get(email.toLowerCase()) || `workspace-${keyFor(resource)}`;
       const metadata = { ...base[id], ...overrides[id] };
       return {
         key: keyFor(resource), room_id: id,
         workspace_name: resource.resourceName || email,
-        email, published: Boolean(room),
+        email, published: Boolean(configuredRoom),
         title: metadata.title || resource.resourceName || email,
         features: metadata.features ?? [], photos: metadata.photos ?? [],
+        sortOrder: metadata.sort_order ?? (configuredRoom ? (configuredRoom.index+1)*10 : 1000),
       };
-    }).sort((a, b) => a.workspace_name.localeCompare(b.workspace_name, 'ca'));
+    }).sort((a,b)=>Number(b.published)-Number(a.published) || a.sortOrder-b.sortOrder || a.workspace_name.localeCompare(b.workspace_name,'ca'));
   }
 
   async save(key: string, edit: ResourceEdit): Promise<void> {
@@ -86,6 +93,7 @@ export class Catalogue {
     const row = (await this.adminRows()).find(item => item.key === key);
     if (!row) throw new RangeError('Recurs no trobat a Workspace');
     const title = edit.title.trim();
+    validateSortOrder(edit.sortOrder);
     if (!title || title.length > 120 || /[\x00-\x1f]/.test(title)) throw new RangeError('Nom públic no vàlid');
     if (new Set(edit.features).size !== edit.features.length
       || edit.features.some(feature => !FEATURES.includes(feature as typeof FEATURES[number]))) {
@@ -131,6 +139,7 @@ export class Catalogue {
       overrides[row.room_id] = {
         ...overrides[row.room_id], resource_email: row.email,
         title, features: edit.features,
+        sort_order: edit.sortOrder,
         photos,
       };
       writeJsonAtomic(this.paths.overrides, overrides);

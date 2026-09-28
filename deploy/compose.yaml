@@ -2,7 +2,7 @@ services:
   reservas:
     build:
       context: ../
-    image: sjma-reserves:local
+    image: sjma-reserves:${SJMA_IMAGE_TAG:-local}
     container_name: sjma-reserves
     restart: unless-stopped
     read_only: true
@@ -23,7 +23,7 @@ services:
       SJMA_PUBLIC_ORIGIN: ${SJMA_PUBLIC_ORIGIN:?Defineix el domini HTTPS}
       SJMA_ENABLE_BOOKINGS: ${SJMA_ENABLE_BOOKINGS:-0}
     volumes:
-      - ../../.private:/app/.private:ro
+      - ${SJMA_PRIVATE_DIR:-../../.private}:/app/.private:ro
     networks:
       - proxy
     healthcheck:

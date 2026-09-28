@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import type { Paths, PublicRoom, Settings } from './config.js';
 import { readJson } from './config.js';
-import { FEATURES, MAX_PHOTO_BYTES, MAX_PHOTOS, keyFor } from './catalogue.js';
+import { FEATURES, MAX_PHOTO_BYTES, MAX_PHOTOS, keyFor, validateSortOrder } from './catalogue.js';
 import type { AdminRow, ResourceEdit } from './catalogue.js';
 import type { WorkspaceApi } from './workspace.js';
 import type { ServerSupabase } from './supabaseClient.js';
@@ -12,7 +12,7 @@ import type { ServerSupabase } from './supabaseClient.js';
 export const PHOTO_BUCKET = 'sjma-reserves-photos';
 interface RoomRow {
   resource_email:string; room_id:string; title:string; published:boolean;
-  features:string[]; photos:string[]; address:string|null;
+  features:string[]; photos:string[]; address:string|null; sort_order:number;
 }
 interface BaseMetadata { title?:string; features?:string[]; photos?:string[]; address?:string }
 
@@ -28,9 +28,11 @@ export class SupabaseCatalogue {
     this.settings.rooms=this.publicRooms().map(room=>({id:room.id,name:room.title,email:room.email}));
   }
   publicRooms():PublicRoom[] {
-    return this.rooms.filter(room=>room.published).map(room=>({
+    return this.rooms.filter(room=>room.published)
+      .sort((a,b)=>a.sort_order-b.sort_order || a.room_id.localeCompare(b.room_id,'ca'))
+      .map(room=>({
       id:room.room_id,name:room.title,email:room.resource_email,title:room.title,
-      features:room.features,photos:room.photos,address:room.address ?? undefined,
+      features:room.features,photos:room.photos,address:room.address ?? undefined,sortOrder:room.sort_order,
     }));
   }
   async adminRows():Promise<AdminRow[]> {
@@ -49,13 +51,15 @@ export class SupabaseCatalogue {
         title:room?.title ?? metadata?.title ?? resource.resourceName ?? email,
         features:room?.features ?? metadata?.features ?? [],
         photos:room?.photos ?? metadata?.photos ?? [],
+        sortOrder:room?.sort_order ?? 1000,
       };
-    }).sort((a,b)=>a.workspace_name.localeCompare(b.workspace_name,'ca'));
+    }).sort((a,b)=>Number(b.published)-Number(a.published) || a.sortOrder-b.sortOrder || a.workspace_name.localeCompare(b.workspace_name,'ca'));
   }
   async save(key:string,edit:ResourceEdit):Promise<void> {
     const row=(await this.adminRows()).find(item=>item.key===key);
     if (!row) throw new RangeError('Recurs no trobat a Workspace');
     const title=edit.title.trim();
+    validateSortOrder(edit.sortOrder);
     if (!title || title.length>120 || /[\x00-\x1f]/.test(title)) throw new RangeError('Nom públic no vàlid');
     if (new Set(edit.features).size!==edit.features.length
       || edit.features.some(feature=>!FEATURES.includes(feature as typeof FEATURES[number])))
@@ -98,7 +102,8 @@ export class SupabaseCatalogue {
       const base=readJson<Record<string,BaseMetadata>>(this.paths.catalogue,{});
       const {error}=await this.client.from('sjma_reservas_rooms').upsert({
         resource_email:row.email.toLowerCase(),room_id:row.room_id,published:edit.published,
-        title,features:edit.features,photos,address:prior?.address ?? base[row.room_id]?.address ?? null,
+        title,features:edit.features,photos,sort_order:edit.sortOrder,
+        address:prior?.address ?? base[row.room_id]?.address ?? null,
         updated_at:new Date().toISOString(),
       },{onConflict:'resource_email'});
       if (error) throw error;

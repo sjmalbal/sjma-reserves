@@ -127,7 +127,7 @@ test('admin lists only Workspace resources and saves local photo metadata', asyn
   assert.equal((await catalogue.adminRows()).length, 2);
   const row = (await catalogue.adminRows())[1];
   const photo = await sharp({create:{width:20,height:20,channels:3,background:'red'}}).png().toBuffer();
-  await catalogue.save(row.key,{title:'Sala pública',features:['Piano'],removePhotos:[],published:true,uploads:[photo]});
+  await catalogue.save(row.key,{title:'Sala pública',features:['Piano'],removePhotos:[],published:true,uploads:[photo],sortOrder:20});
   assert.equal(settings.rooms.length, 2);
   assert.equal(catalogue.publicRooms()[1].title, 'Sala pública');
   assert.equal(catalogue.publicRooms()[1].photos.length, 1);
@@ -137,16 +137,28 @@ test('admin lists only Workspace resources and saves local photo metadata', asyn
   service.close();
 });
 
+test('admin order controls the public room list', async () => {
+  const {paths,settings,workspace,service}=fixture();
+  const catalogue=new Catalogue(paths,settings,workspace);
+  const second=(await catalogue.adminRows()).find(row=>row.email==='secretaria@example.org')!;
+  await catalogue.save(second.key,{title:'Sala B',features:[],removePhotos:[],published:true,uploads:[],sortOrder:1});
+  assert.deepEqual(catalogue.publicRooms().map(room=>room.title),['Sala B','Aula 1']);
+  await catalogue.save(second.key,{title:'Sala B',features:[],removePhotos:[],published:true,uploads:[],sortOrder:30});
+  assert.deepEqual(catalogue.publicRooms().map(room=>room.title),['Aula 1','Sala B']);
+  await assert.rejects(catalogue.save(second.key,{title:'Sala B',features:[],removePhotos:[],published:true,uploads:[],sortOrder:0}),/ordre/);
+  service.close();
+});
+
 test('admin can choose a cover and remove a photo without changing Workspace resources', async () => {
   const {paths,settings,workspace,service} = fixture();
   writeFileSync(paths.catalogue, '{}');
   const catalogue = new Catalogue(paths,settings,workspace);
   const row = (await catalogue.adminRows())[0];
   const photo = await sharp({create:{width:20,height:20,channels:3,background:'blue'}}).png().toBuffer();
-  await catalogue.save(row.key,{title:'Aula 1',features:[],removePhotos:[],published:true,uploads:[photo,photo]});
+  await catalogue.save(row.key,{title:'Aula 1',features:[],removePhotos:[],published:true,uploads:[photo,photo],sortOrder:10});
   const before = catalogue.publicRooms()[0].photos;
   assert.equal(before.length,2);
-  await catalogue.save(row.key,{title:'Aula 1',features:[],removePhotos:[],published:true,uploads:[],coverPhoto:before[1]});
+  await catalogue.save(row.key,{title:'Aula 1',features:[],removePhotos:[],published:true,uploads:[],coverPhoto:before[1],sortOrder:10});
   assert.equal(catalogue.publicRooms()[0].photos[0],before[1]);
   assert.deepEqual(await catalogue.removePhoto(row.key,before[1]),[before[0]]);
   assert.deepEqual(catalogue.publicRooms()[0].photos,[before[0]]);
@@ -193,8 +205,8 @@ test('Fastify keeps public booking writes disabled by default and protects admin
   assert.ok(csrf);
   const key = (await new Catalogue(paths,settings,workspace).adminRows())[0].key;
   const boundary = 'sjma-test-boundary';
-  const form = (token: string) => ['csrf_token', 'title', 'published', 'features'].map((name, index) =>
-    `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${[token,'Aula renovada','on','Piano'][index]}\r\n`).join('') + `--${boundary}--\r\n`;
+  const form = (token: string) => ['csrf_token', 'title', 'sort_order', 'published', 'features'].map((name, index) =>
+    `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${[token,'Aula renovada','10','on','Piano'][index]}\r\n`).join('') + `--${boundary}--\r\n`;
   const headers = {cookie:sessionCookie,
     'content-type':`multipart/form-data; boundary=${boundary}`};
   assert.equal((await app.inject({method:'POST',url:`/admin/resources/${key}`,headers,payload:form('bad')})).statusCode,403);
@@ -202,7 +214,7 @@ test('Fastify keeps public booking writes disabled by default and protects admin
   assert.equal(new Catalogue(paths,settings,workspace).publicRooms()[0].title,'Aula renovada');
   const catalogue = new Catalogue(paths,settings,workspace);
   const image = await sharp({create:{width:20,height:20,channels:3,background:'green'}}).png().toBuffer();
-  await catalogue.save(key,{title:'Aula renovada',features:['Piano'],removePhotos:[],published:true,uploads:[image]});
+  await catalogue.save(key,{title:'Aula renovada',features:['Piano'],removePhotos:[],published:true,uploads:[image],sortOrder:10});
   const photo = catalogue.publicRooms()[0].photos[0];
   assert.equal((await app.inject({method:'POST',url:`/admin/resources/${key}/photos/remove`,
     headers:{cookie:sessionCookie},payload:{photo,csrf_token:'wrong'}})).statusCode,403);

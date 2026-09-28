@@ -1,0 +1,61 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: TypeScript, tests and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    name: Deploy to Azure VM
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: sjma-reserves-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy tested commit
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          az vm run-command invoke \
+            --resource-group sjma-docuseal-rg \
+            --name sjma-docuseal-vm \
+            --command-id RunShellScript \
+            --scripts "bash /opt/sjma-reserves/deploy.sh $COMMIT_SHA" \
+            --query 'value[].message' -o tsv | tee deploy-result.txt
+          grep -Fq "SJMA_DEPLOY_OK $COMMIT_SHA" deploy-result.txt
+      - name: Verify public site
+        run: |
+          curl --fail --silent --show-error --max-time 20 https://espais.sjmalbal.com/ -o /dev/null
+          curl --fail --silent --show-error --max-time 20 https://espais.sjmalbal.com/admin/login -o /dev/null

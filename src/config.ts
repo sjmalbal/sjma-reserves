@@ -21,6 +21,7 @@ export interface PublicRoom extends Room {
   title: string;
   features: string[];
   photos: string[];
+  sortOrder?: number;
   address?: string;
 }
 export interface Paths {
