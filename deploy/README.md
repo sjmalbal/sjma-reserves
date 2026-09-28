@@ -5,10 +5,12 @@ El 28-09-2026 es va instal·lar el contenidor `sjma-reserves` a la VM Azure exis
 ## Estat i passos pendents
 
 1. El registre DNS A `espais` → `158.158.51.246`, el certificat HTTPS i la regla de Caddy estan actius.
-2. El client OAuth de tipus **Aplicació web** del projecte `sjmalbal1` està guardat en `../.private/cliente-oauth-web.json` localment i al servidor amb permisos 0600. L'inici d'OAuth retorna a `https://espais.sjmalbal.com/admin/auth/callback` i envia una cookie segura. Encara cal completar el retorn amb un administrador real.
+2. El client OAuth de tipus **Aplicació web** del projecte `sjmalbal1` està guardat en `../.private/cliente-oauth-web.json` localment i al servidor amb permisos 0600. L'inici d'OAuth retorna a `https://espais.sjmalbal.com/admin/auth/callback` i envia una cookie segura. El 29-09-2026 un administrador va confirmar que havia accedit al panell; es va comprovar una sessió activa en Supabase sense consultar dades d'identitat.
 3. Cal aprovar les regles definitives de reserva i la informació de privacitat abans d'activar `SJMA_ENABLE_BOOKINGS=1`. Els valors actuals permeten reserves durant les 24 hores, de 30 minuts a 5 hores i fins a 90 dies d'antelació.
-4. La web pública es va provar en un navegador d'escriptori i mòbil: 10 aules, fotos carregades, detall accessible, sense desbordament horitzontal ni errors de JavaScript. `/api/day` respon 200. Cal completar el retorn del login amb un administrador real. La prova real del circuit de reserva i dels correus es va fer en local amb Google Workspace i Supabase el 28-09-2026, amb neteja posterior.
+4. La web pública es va provar en un navegador d'escriptori i mòbil: 10 aules, fotos carregades, detall accessible, sense desbordament horitzontal ni errors de JavaScript. `/api/day` respon 200. La prova real del circuit de reserva i dels correus es va fer en local amb Google Workspace i Supabase el 28-09-2026, amb neteja posterior.
 
 El contenidor utilitza `/app/.private` com a volum de només lectura, amb els tokens de Workspace, el client OAuth i la clau servidor de Supabase. No incloure esta carpeta en la imatge Docker ni en cap repositori. Les dades de reserves, catàleg i sessions es guarden en Supabase; la VM no és la font d'estes dades.
 
 La configuració de Compose es troba en `compose.yaml`. Per actualitzar el contenidor cal indicar `SJMA_PUBLIC_ORIGIN` i el valor aprovat de `SJMA_ENABLE_BOOKINGS`. El proxy Caddy compartit queda en el projecte DocuSeal.
+
+No hi ha CI/CD configurat. Els commits i pushes al repositori públic no despleguen canvis a la VM; fins ara el codi s'ha copiat i el contenidor s'ha reconstruït manualment.
