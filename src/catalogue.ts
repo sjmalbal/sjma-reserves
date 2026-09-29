@@ -5,6 +5,8 @@ import sharp from 'sharp';
 import type { Paths, PublicRoom, Settings } from './config.js';
 import { readJson, writeJsonAtomic } from './config.js';
 import type { CalendarResource, WorkspaceApi } from './workspace.js';
+import type { RoomBookingRules } from './rules.js';
+import { validateRoomRules } from './rules.js';
 
 export const FEATURES = ['Piano', 'Espill', 'Pissarra Digital', 'Pissarra',
   'Micròfon de gravació', 'Altaveus', 'Projector'] as const;
@@ -19,15 +21,18 @@ interface Metadata {
   source_url?: string;
   resource_email?: string;
   sort_order?: number;
+  booking_rules?: RoomBookingRules;
 }
 type MetadataMap = Record<string, Metadata>;
 export interface AdminRow {
   key: string; room_id: string; workspace_name: string; email: string;
   published: boolean; title: string; features: string[]; photos: string[]; sortOrder: number;
+  rules?: RoomBookingRules;
 }
 export interface ResourceEdit {
   title: string; features: string[]; removePhotos: string[];
   published: boolean; uploads: Buffer[]; coverPhoto?: string; sortOrder: number;
+  rules?: RoomBookingRules;
 }
 
 export function validateSortOrder(value: number): void {
@@ -61,6 +66,7 @@ export class Catalogue {
         features: metadata.features ?? [],
         photos: metadata.photos ?? [],
         address: metadata.address,
+        rules: metadata.booking_rules ?? configured.rules,
       };
     }).sort((a,b)=>a.sortOrder-b.sortOrder || a.id.localeCompare(b.id,'ca'));
   }
@@ -84,6 +90,7 @@ export class Catalogue {
         title: metadata.title || resource.resourceName || email,
         features: metadata.features ?? [], photos: metadata.photos ?? [],
         sortOrder: metadata.sort_order ?? (configuredRoom ? (configuredRoom.index+1)*10 : 1000),
+        rules: metadata.booking_rules ?? configuredRoom?.room.rules,
       };
     }).sort((a,b)=>Number(b.published)-Number(a.published) || a.sortOrder-b.sortOrder || a.workspace_name.localeCompare(b.workspace_name,'ca'));
   }
@@ -94,6 +101,7 @@ export class Catalogue {
     if (!row) throw new RangeError('Recurs no trobat a Workspace');
     const title = edit.title.trim();
     validateSortOrder(edit.sortOrder);
+    const rules=validateRoomRules(edit.rules ?? row.rules ?? {});
     if (!title || title.length > 120 || /[\x00-\x1f]/.test(title)) throw new RangeError('Nom públic no vàlid');
     if (new Set(edit.features).size !== edit.features.length
       || edit.features.some(feature => !FEATURES.includes(feature as typeof FEATURES[number]))) {
@@ -140,6 +148,7 @@ export class Catalogue {
         ...overrides[row.room_id], resource_email: row.email,
         title, features: edit.features,
         sort_order: edit.sortOrder,
+        booking_rules: rules,
         photos,
       };
       writeJsonAtomic(this.paths.overrides, overrides);
@@ -149,7 +158,7 @@ export class Catalogue {
       const index = current.findIndex(room => room.email.toLowerCase() === row.email.toLowerCase());
       const updated = [...current];
       if (edit.published) {
-        const resource = { ...current[index], id: row.room_id, name: title, email: row.email };
+        const resource = { ...current[index], id: row.room_id, name: title, email: row.email, rules };
         if (index < 0) updated.push(resource);
         else updated[index] = resource;
       } else if (index >= 0) updated.splice(index, 1);

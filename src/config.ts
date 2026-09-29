@@ -1,8 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, renameSync, writeFileSync, unlinkSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import type { RoomBookingRules } from './rules.js';
 
-export interface Room { id: string; name: string; email: string }
+export interface Room { id: string; name: string; email: string; rules?: RoomBookingRules }
 export interface OpeningHours { opening: string; closing: string }
 export interface Settings {
   timezone: string;

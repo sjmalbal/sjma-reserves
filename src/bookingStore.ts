@@ -28,7 +28,7 @@ export class SqliteBookingStore implements BookingStore {
       id TEXT PRIMARY KEY, room_email TEXT NOT NULL,
       starts_at TEXT NOT NULL, ends_at TEXT NOT NULL,
       requester_name TEXT NOT NULL, requester_email TEXT NOT NULL,
-      state TEXT NOT NULL CHECK (state IN ('pending', 'confirmed', 'declined', 'failed')),
+      state TEXT NOT NULL CHECK (state IN ('pending', 'confirmed', 'declined', 'failed', 'cancelled')),
       created_at TEXT NOT NULL, updated_at TEXT NOT NULL
     )`);
     const columns = new Set((this.db.pragma('table_info(bookings)') as Array<{name:string}>).map(row=>row.name));
@@ -36,6 +36,21 @@ export class SqliteBookingStore implements BookingStore {
       if (!columns.has(column)) this.db.exec(`ALTER TABLE bookings ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
     for (const column of ['requester_mail_state','secretariat_mail_state'])
       if (!columns.has(column)) this.db.exec(`ALTER TABLE bookings ADD COLUMN ${column} TEXT NOT NULL DEFAULT 'unsent'`);
+    if (!columns.has('source')) this.db.exec("ALTER TABLE bookings ADD COLUMN source TEXT NOT NULL DEFAULT 'public'");
+    const schema=(this.db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'")
+      .get() as {sql:string}).sql;
+    if (!schema.includes("'cancelled'")) {
+      const names=(this.db.pragma('table_info(bookings)') as Array<{name:string}>).map(row=>row.name);
+      this.db.exec('BEGIN IMMEDIATE');
+      try {
+        this.db.exec(schema.replace(/CREATE TABLE (?:IF NOT EXISTS )?bookings\b/i,'CREATE TABLE bookings_rebuilt')
+          .replace("'failed'))", "'failed', 'cancelled'))"));
+        this.db.exec(`INSERT INTO bookings_rebuilt (${names.join(',')}) SELECT ${names.join(',')} FROM bookings`);
+        this.db.exec('DROP TABLE bookings');
+        this.db.exec('ALTER TABLE bookings_rebuilt RENAME TO bookings');
+        this.db.exec('COMMIT');
+      } catch(error) { this.db.exec('ROLLBACK'); throw error; }
+    }
   }
   close(): void { this.db.close(); }
   async busy(email: string, start: string, end: string): Promise<BusyInterval[]> {
@@ -53,9 +68,9 @@ export class SqliteBookingStore implements BookingStore {
       if (conflict) throw new RangeError('Ese turno ya está reservado');
       this.db.prepare(`INSERT INTO bookings
         (id,room_email,starts_at,ends_at,requester_name,requester_email,state,created_at,updated_at,
-         requester_last_name,instrument,relation,note,room_name,requester_mail_state,secretariat_mail_state)
+         requester_last_name,instrument,relation,note,room_name,requester_mail_state,secretariat_mail_state,source)
         VALUES (@id,@room_email,@starts_at,@ends_at,@requester_name,@requester_email,@state,@created_at,@updated_at,
-         @requester_last_name,@instrument,@relation,@note,@room_name,@requester_mail_state,@secretariat_mail_state)`).run(row);
+         @requester_last_name,@instrument,@relation,@note,@room_name,@requester_mail_state,@secretariat_mail_state,@source)`).run(row);
       this.db.exec('COMMIT');
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }

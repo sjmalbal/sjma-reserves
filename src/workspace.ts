@@ -27,6 +27,8 @@ export interface WorkspaceApi {
   busyMany(emails: string[], start: string, end: string): Promise<Record<string, BusyInterval[]>>;
   busy(email: string, start: string, end: string): Promise<BusyInterval[]>;
   insert(id: string, resourceEmail: string, start: string, end: string): Promise<GoogleEvent>;
+  insertBlock(id:string,resourceEmail:string,start:string,end:string,label:string):Promise<GoogleEvent>;
+  move(id:string,resourceEmail:string,start:string,end:string):Promise<GoogleEvent>;
   get(id: string): Promise<GoogleEvent>;
   delete(id: string): Promise<void>;
   sendMail(to: string, subject: string, body: string, sender: string): Promise<string>;
@@ -181,6 +183,24 @@ export class Workspace implements WorkspaceApi {
         start: { dateTime: start }, end: { dateTime: end },
         attendees: [{ email: resourceEmail, resource: true }],
         extendedProperties: { private: { sjmaBookingId: id } },
+      });
+  }
+
+  async insertBlock(id:string,resourceEmail:string,start:string,end:string,_label:string):Promise<GoogleEvent> {
+    return googleJson<GoogleEvent>(this.writeClient([EVENT_SCOPE]),'POST',
+      `${CALENDAR}/calendars/primary/events?sendUpdates=all`,{
+        id,summary:'Espai no disponible · SJMA',
+        description:`Bloqueig SJMA: ${id}`,
+        start:{dateTime:start},end:{dateTime:end},
+        attendees:[{email:resourceEmail,resource:true}],
+        extendedProperties:{private:{sjmaBlockId:id}},
+      });
+  }
+
+  async move(id:string,resourceEmail:string,start:string,end:string):Promise<GoogleEvent> {
+    return googleJson<GoogleEvent>(this.writeClient([EVENT_SCOPE]),'PATCH',
+      `${CALENDAR}/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=all`,{
+        start:{dateTime:start},end:{dateTime:end},attendees:[{email:resourceEmail,resource:true}],
       });
   }
 

@@ -24,6 +24,8 @@ La web s'obri a <http://127.0.0.1:8766/> i l'administració a <http://127.0.0.1:
 
 El panell d'administració té una pàgina de login pròpia. La identitat s'autoritza amb el compte de Google Workspace de la SJMA i el servidor consulta `empleados.emp_admin` en Supabase per al correu verificat abans de crear la sessió i en cada accés al panell. Sols entra si hi ha exactament una fitxa amb `emp_admin = true`. La sessió caduca al cap de 8 hores, es pot tancar des del panell i els formularis tenen protecció CSRF. L'antiga contrasenya d'administració ja no dona accés. El panell permet ampliar fotos, llevar-les amb confirmació, triar la portada i configurar un número d'ordre per a cada recurs; el número menor apareix primer en la web pública.
 
+El panell inclou un calendari diari i setmanal per aula que distingix reserves pròpies, bloquejos i ocupació externa de Workspace (sense revelar-ne el títol). Permet crear bloquejos puntuals o repetits, tancaments de dies complets, reserves en nom d'una persona, cancel·lar-les i canviar-les d'aula i hora amb avisos per correu. Els bloquejos creen esdeveniments que conviden els recursos de Google, igual que les reserves. Les fitxes d'aula permeten configurar horari propi, duració màxima, antelació mínima i temps entre reserves. L'historial d'administració registra l'acció, la persona administradora i una referència sense copiar les dades del formulari.
+
 ## Configuració i dades
 
 - `assets/config.example.json` mostra l'horari setmanal, la duració i l'antelació. La configuració activa d'horari és `../.private/reservas-config.json`; `weekly_hours` usa les claus `1` (dilluns) a `7` (diumenge) i interpreta un tancament anterior a l'obertura com a hora de l'endemà.
@@ -44,7 +46,7 @@ npm run authorize -- write
 
 `npm run retry-mail -- --booking-id REFERÈNCIA --retry-failed` reintenta només avisos que tenen un error definitiu. `npm run probe -- --confirmar-prueba-real` crea i elimina un esdeveniment real de prova: és una acció amb efectes en Workspace i cal decidir expressament quan fer-la.
 
-`npm run purge-old-bookings` mostra, sense esborrar, quants registres de Supabase han caducat. `npm run purge-old-bookings -- --apply` els elimina per lots de 500. En producció s'executa cada dia des de la VM segons `deploy/retention.cron`.
+`npm run purge-old-bookings` mostra, sense esborrar, quants registres de Supabase han caducat. `npm run purge-old-bookings -- --apply` elimina per lots de 500 les reserves i els bloquejos finalitzats fa més d'un any i les accions administratives registrades fa més d'un any. En producció s'executa cada dia des de la VM segons `deploy/retention.cron`.
 
 `npm run probe-full -- --confirmar-prueba-real` prova el circuit HTTP de reserva amb un servidor local temporal que tinga `SJMA_ENABLE_BOOKINGS=1` i `SJMA_PORT=8767`. Usa el compte organitzador com a sol·licitant, envia els dos avisos reals, elimina l'esdeveniment i la fila de Supabase, comprova que l'aula queda lliure i envia a secretaria un missatge final que identifica l'avís anterior com a prova. Cal comprovar l'eixida del procés i que la neteja s'ha completat.
 

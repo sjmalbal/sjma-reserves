@@ -10,6 +10,7 @@ export default defineConfig({
       entry: {
         catalogue: resolve(import.meta.dirname, 'src/client/catalogue.ts'),
         admin: resolve(import.meta.dirname, 'src/client/admin.ts'),
+        'admin-calendar': resolve(import.meta.dirname, 'src/client/adminCalendar.ts'),
       },
       formats: ['es'],
       fileName: (_format, name) => `${name}.js`,

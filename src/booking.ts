@@ -6,7 +6,7 @@ import type { BookingStore } from './bookingStore.js';
 import { GoogleError, resourceResponse } from './workspace.js';
 import type { BusyInterval, GoogleEvent, WorkspaceApi } from './workspace.js';
 
-export type BookingState = 'pending' | 'confirmed' | 'declined' | 'failed';
+export type BookingState = 'pending' | 'confirmed' | 'declined' | 'failed' | 'cancelled';
 export type MailState = 'unsent' | 'sending' | 'sent' | 'failed' | 'unknown';
 export interface BookingResult {
   id: string;
@@ -24,6 +24,7 @@ export interface BookingRow {
   instrument: string; relation: string; note: string; room_name: string;
   state: BookingState; created_at: string; updated_at: string;
   requester_mail_state: MailState; secretariat_mail_state: MailState;
+  source?: 'public' | 'admin';
 }
 export interface DayStart { value: string; label: string; time: string; ends: Array<{value: string; label: string; time: string; minutes: number}> }
 export interface DayAvailability {
@@ -58,6 +59,13 @@ export class BookingService {
   close(): void { this.store.close(); }
   private now(): DateTime { return this.clock().setZone(this.settings.timezone); }
   private room(id: string): Room | undefined { return this.settings.rooms.find(room => room.id === id); }
+  validateAdminRange(roomId:string,startText:string,endText:string):
+    {room:Room;start:string;end:string;startUtc:string;endUtc:string} {
+    const room=this.room(roomId);
+    if (!room) throw new RangeError('Aula no disponible');
+    const [start,end]=this.parseRange(startText,endText,room);
+    return {room,start:iso(start),end:iso(end),startUtc:utc(start),endUtc:utc(end)};
+  }
   private parseTime(value: string): DateTime {
     if (!value || typeof value !== 'string') throw new RangeError('Fecha u hora no válida');
     const zoned = /(?:Z|[+-]\d{2}:\d{2})$/.test(value);
@@ -77,9 +85,11 @@ export class BookingService {
     return parsed;
   }
 
-  private dayBounds(day: DateTime): [DateTime, DateTime] {
+  private dayBounds(day: DateTime, room?: Room): [DateTime, DateTime] {
     const midnight = day.startOf('day');
-    const hours = this.settings.weekly_hours?.[String(day.weekday)];
+    const roomHours=room?.rules?.weekly_hours?.[String(day.weekday)];
+    if (roomHours && 'closed' in roomHours) return [midnight, midnight];
+    const hours = roomHours ?? this.settings.weekly_hours?.[String(day.weekday)];
     const parse = (value: string): number => {
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error('Horari setmanal no vàlid');
       const [hour, minute] = value.split(':').map(Number);
@@ -95,25 +105,25 @@ export class BookingService {
     return [opening, closing];
   }
 
-  private parseRange(startText: string, endText?: string): [DateTime, DateTime] {
+  private parseRange(startText: string, endText: string | undefined, room: Room): [DateTime, DateTime] {
     const start = this.parseTime(startText);
     const step = this.settings.slot_step_minutes ?? this.settings.slot_minutes;
-    const today = this.dayBounds(start);
-    const yesterday = this.dayBounds(start.minus({days:1}));
+    const today = this.dayBounds(start,room);
+    const yesterday = this.dayBounds(start.minus({days:1}),room);
     const [opening, closing] = [today, yesterday].find(([open, close]) =>
       minutes(start) >= minutes(open) && minutes(start) < minutes(close)) ?? today;
     const sinceOpen = (minutes(start) - minutes(opening)) / 60_000;
     if (sinceOpen < 0 || sinceOpen % step !== 0 || start.second || start.millisecond)
       throw new RangeError('L’hora no coincidix amb els torns disponibles');
     const now = this.now();
-    if (minutes(start) <= minutes(now)
+    if (minutes(start) <= minutes(now.plus({hours:room.rules?.min_notice_hours ?? 0}))
       || dateOnly(opening) > dateOnly(now.plus({ days: this.settings.max_days_ahead }))) {
       throw new RangeError('La fecha está fuera del plazo de reserva');
     }
     const end = endText ? this.parseTime(endText) : start.plus({ minutes: this.settings.slot_minutes });
     const duration = (minutes(end) - minutes(start)) / 60_000;
     if (duration < (this.settings.min_minutes ?? this.settings.slot_minutes)
-      || duration > (this.settings.max_minutes ?? this.settings.slot_minutes)
+      || duration > Math.min(room.rules?.max_minutes ?? Infinity,this.settings.max_minutes ?? this.settings.slot_minutes)
       || duration % step !== 0) throw new RangeError('La duració no està permesa');
     if (minutes(start) < minutes(opening) || minutes(end) > minutes(closing)) {
       throw new RangeError('Fora de l’horari de reserva');
@@ -126,6 +136,12 @@ export class BookingService {
       && Date.parse(interval.start) < minutes(end));
   }
 
+  private conflicts(start:DateTime,end:DateTime,busy:BusyInterval[],bufferMinutes=0):boolean {
+    const buffer=bufferMinutes*60_000;
+    return busy.some(interval=>minutes(start)<Date.parse(interval.end)+buffer
+      && Date.parse(interval.start)-buffer<minutes(end));
+  }
+
   private async localBusy(email: string, start: DateTime, end: DateTime): Promise<BusyInterval[]> {
     return this.store.busy(email,utc(start),utc(end));
   }
@@ -134,10 +150,10 @@ export class BookingService {
     await this.store.setState(id,state);
   }
 
-  async reserve(input: ReserveInput): Promise<BookingResult> {
+  async reserve(input: ReserveInput, source:'public'|'admin'='public'): Promise<BookingResult> {
     const room = this.room(input.room);
     if (!room) throw new RangeError('Aula no disponible');
-    const [start, end] = this.parseRange(input.start, input.end);
+    const [start, end] = this.parseRange(input.start, input.end,room);
     const name = (input.name ?? '').trim();
     const email = (input.email ?? '').trim();
     const lastName = (input.last_name ?? '').trim();
@@ -153,7 +169,10 @@ export class BookingService {
 
     // Google remains the source for external occupancy. The store also enforces
     // local overlap atomically when it inserts the pending reservation.
-    if (this.overlaps(start, end, await this.workspace.busy(room.email, iso(start), iso(end)))) {
+    const buffer=room.rules?.buffer_minutes ?? 0;
+    const lookupStart=start.minus({minutes:buffer}),lookupEnd=end.plus({minutes:buffer});
+    if (this.conflicts(start, end, await this.workspace.busy(room.email, iso(lookupStart), iso(lookupEnd)),buffer)
+      || this.conflicts(start,end,await this.localBusy(room.email,lookupStart,lookupEnd),buffer)) {
       throw new RangeError('Ese turno está ocupado en Google Workspace');
     }
     const id = randomBytes(16).toString('hex');
@@ -163,6 +182,7 @@ export class BookingService {
       requester_name:name, requester_last_name:lastName, requester_email:email,
       instrument,relation,note,room_name:room.name,state:'pending',
       created_at:stamp,updated_at:stamp,requester_mail_state:'unsent',secretariat_mail_state:'unsent',
+      source,
     });
 
     let event: GoogleEvent;
@@ -268,15 +288,18 @@ export class BookingService {
     const room = this.room(roomId);
     if (!room) throw new RangeError('Aula no disponible');
     const date = this.parseDay(day), now = this.now();
-    const [opening, closing] = this.dayBounds(date);
-    const busy = await this.workspace.busy(room.email, iso(opening), iso(closing));
+    const [opening, closing] = this.dayBounds(date,room);
+    const buffer=room.rules?.buffer_minutes ?? 0;
+    if (minutes(opening)===minutes(closing)) return [];
+    const busy = await this.workspace.busy(room.email, iso(opening.minus({minutes:buffer})), iso(closing.plus({minutes:buffer})));
     const slots = [];
     const step = this.settings.slot_step_minutes ?? this.settings.slot_minutes;
     for (let current = opening; minutes(current.plus({minutes: this.settings.slot_minutes})) <= minutes(closing);
          current = current.plus({minutes: step})) {
       const end = current.plus({minutes: this.settings.slot_minutes});
-      if (minutes(current) > minutes(now) && !this.overlaps(current, end, busy)
-        && !(await this.localBusy(room.email, current, end)).length) {
+      if (minutes(current) > minutes(now.plus({hours:room.rules?.min_notice_hours ?? 0}))
+        && !this.conflicts(current, end, busy,buffer)
+        && !this.conflicts(current,end,await this.localBusy(room.email,current.minus({minutes:buffer}),end.plus({minutes:buffer})),buffer)) {
         slots.push({ start: iso(current), label: `${timeLabel(current)}–${timeLabel(end)}` });
       }
     }
@@ -287,21 +310,30 @@ export class BookingService {
     const date = this.parseDay(day), now = this.now();
     const [opening, closing] = this.dayBounds(date);
     const emails = this.settings.rooms.map(room => room.email);
-    const googleBusy = await this.workspace.busyMany(emails, iso(opening), iso(closing));
+    const bounds=this.settings.rooms.map(room=>this.dayBounds(date,room));
+    const maxBuffer=Math.max(0,...this.settings.rooms.map(room=>room.rules?.buffer_minutes ?? 0));
+    const earliest=Math.min(minutes(opening),...bounds.map(item=>minutes(item[0])));
+    const latest=Math.max(minutes(closing),...bounds.map(item=>minutes(item[1])));
+    const googleBusy = await this.workspace.busyMany(emails,
+      iso(DateTime.fromMillis(earliest).minus({minutes:maxBuffer})),
+      iso(DateTime.fromMillis(latest).plus({minutes:maxBuffer})));
     const step = this.settings.slot_step_minutes ?? 30;
     const minimum = this.settings.min_minutes ?? 30;
     const maximum = this.settings.max_minutes ?? 300;
     const output: DayAvailability['rooms'] = {};
     for (const room of this.settings.rooms) {
-      const busy = [...googleBusy[room.email], ...await this.localBusy(room.email, opening, closing)];
+      const [roomOpening,roomClosing]=this.dayBounds(date,room);
+      const buffer=room.rules?.buffer_minutes ?? 0;
+      const busy = [...googleBusy[room.email], ...await this.localBusy(room.email,
+        roomOpening.minus({minutes:buffer}),roomClosing.plus({minutes:buffer}))];
       const starts: DayStart[] = [];
-      for (let current = opening; minutes(current.plus({minutes: minimum})) <= minutes(closing);
+      for (let current = roomOpening; minutes(current.plus({minutes: minimum})) <= minutes(roomClosing);
            current = current.plus({minutes: step})) {
-        if (minutes(current) <= minutes(now)) continue;
+        if (minutes(current) <= minutes(now.plus({hours:room.rules?.min_notice_hours ?? 0}))) continue;
         const ends: DayStart['ends'] = [];
-        for (let duration = minimum; duration <= maximum; duration += step) {
+        for (let duration = minimum; duration <= Math.min(maximum,room.rules?.max_minutes ?? Infinity); duration += step) {
           const candidate = current.plus({minutes: duration});
-          if (minutes(candidate) > minutes(closing) || this.overlaps(current, candidate, busy)) break;
+          if (minutes(candidate) > minutes(roomClosing) || this.conflicts(current, candidate, busy,buffer)) break;
           ends.push({ value: iso(candidate), label: timeLabel(candidate), time: fmt(candidate, 'HH:mm'), minutes: duration });
         }
         if (ends.length) starts.push({ value: iso(current), label: timeLabel(current), time: fmt(current, 'HH:mm'), ends });

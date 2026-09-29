@@ -24,6 +24,15 @@ search?.addEventListener('input', updateResources);
 filter?.addEventListener('change', updateResources);
 updateResources();
 
+for (const day of document.querySelectorAll<HTMLElement>('.rule-day')) {
+  const mode=day.querySelector<HTMLSelectElement>('select');
+  const times=Array.from(day.querySelectorAll<HTMLInputElement>('input[type="time"]'));
+  const update=()=>{for (const input of times) {
+    input.disabled=mode?.value!=='custom';input.required=mode?.value==='custom';
+  }};
+  mode?.addEventListener('change',update);update();
+}
+
 if (location.hash.startsWith('#resource-')) {
   const resource = document.querySelector<HTMLElement>(location.hash);
   if (resource?.classList.contains('resource')) {

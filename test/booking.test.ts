@@ -39,6 +39,15 @@ class FakeWorkspace implements WorkspaceApi {
     this.events.set(id, event);
     return event;
   }
+  async insertBlock(id:string,resourceEmail:string,start:string,end:string,_label:string):Promise<GoogleEvent> {
+    return this.insert(id,resourceEmail,start,end);
+  }
+  async move(id:string,resourceEmail:string,start:string,end:string):Promise<GoogleEvent> {
+    const event=this.events.get(id)!;
+    event.start={dateTime:start};event.end={dateTime:end};
+    event.attendees=[{email:resourceEmail,responseStatus:this.response}];
+    return event;
+  }
   async get(id: string): Promise<GoogleEvent> { return this.events.get(id)!; }
   async delete(id: string): Promise<void> { this.events.delete(id); }
   async sendMail(to: string, subject: string, body: string, sender: string): Promise<string> {
@@ -236,8 +245,30 @@ test('Fastify keeps public booking writes disabled by default and protects admin
   assert.equal(authorized.statusCode, 200);
   assert.match(authorized.body, /Secretaria/);
   assert.match(authorized.body, /admin@sjmalbal.com/);
+  assert.match(authorized.body, /Regles de reserva de l’aula/);
+  assert.equal((await app.inject({url:'/admin/calendar'})).statusCode,303);
+  const calendarPage=await app.inject({url:'/admin/calendar',headers:{cookie:sessionCookie}});
+  assert.equal(calendarPage.statusCode,200);
+  assert.match(calendarPage.body,/Vacances o tancament/);
+  assert.match(calendarPage.body,/Reserva de secretaria/);
+  assert.equal((await app.inject({url:'/admin/audit',headers:{cookie:sessionCookie}})).statusCode,200);
+  const calendarDate=DateTime.now().setZone('Europe/Madrid').plus({days:3}).toISODate();
+  assert.equal((await app.inject({url:`/admin/api/schedule?date=${calendarDate}&view=week`,
+    headers:{cookie:sessionCookie}})).statusCode,200);
   const csrf = /name="csrf_token" value="([^"]+)"/.exec(authorized.body)?.[1];
   assert.ok(csrf);
+  assert.equal((await app.inject({method:'POST',url:'/admin/api/blocks',headers:{cookie:sessionCookie},
+    payload:{csrf_token:'bad',rooms:['aula-1'],start:`${calendarDate}T10:00`,end:`${calendarDate}T11:00`,
+      label:'Assaig',kind:'block'}})).statusCode,403);
+  const createdBlock=await app.inject({method:'POST',url:'/admin/api/blocks',headers:{cookie:sessionCookie},
+    payload:{csrf_token:csrf,rooms:['aula-1'],start:`${calendarDate}T10:00`,end:`${calendarDate}T11:00`,
+      label:'Assaig',kind:'block'}});
+  assert.equal(createdBlock.statusCode,201);
+  const group=(createdBlock.json() as {group_id:string}).group_id;
+  const withBlock=await app.inject({url:`/admin/api/schedule?date=${calendarDate}`,headers:{cookie:sessionCookie}});
+  assert.equal((withBlock.json() as {blocks:unknown[]}).blocks.length,1);
+  assert.equal((await app.inject({method:'POST',url:`/admin/api/blocks/${group}/cancel`,
+    headers:{cookie:sessionCookie},payload:{csrf_token:csrf}})).statusCode,200);
   const key = (await new Catalogue(paths,settings,workspace).adminRows())[0].key;
   const boundary = 'sjma-test-boundary';
   const form = (token: string) => ['csrf_token', 'title', 'sort_order', 'published', 'features'].map((name, index) =>
