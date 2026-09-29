@@ -1,4 +1,5 @@
 /var/log/sjma-reserves-retention.log {
+    su root root
     weekly
     size 1M
     rotate 4
