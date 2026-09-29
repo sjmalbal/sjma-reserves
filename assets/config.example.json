@@ -2,6 +2,15 @@
   "timezone": "Europe/Madrid",
   "opening_hour": 0,
   "closing_hour": 24,
+  "weekly_hours": {
+    "1": {"opening": "08:30", "closing": "22:00"},
+    "2": {"opening": "08:30", "closing": "22:00"},
+    "3": {"opening": "08:30", "closing": "22:00"},
+    "4": {"opening": "08:30", "closing": "22:00"},
+    "5": {"opening": "08:30", "closing": "01:00"},
+    "6": {"opening": "08:30", "closing": "01:00"},
+    "7": {"opening": "09:00", "closing": "13:00"}
+  },
   "slot_minutes": 60,
   "slot_step_minutes": 30,
   "min_minutes": 30,

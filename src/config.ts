@@ -3,10 +3,12 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync, unlinkSync, existsS
 import { dirname, join, resolve } from 'node:path';
 
 export interface Room { id: string; name: string; email: string }
+export interface OpeningHours { opening: string; closing: string }
 export interface Settings {
   timezone: string;
   opening_hour: number;
   closing_hour: number;
+  weekly_hours?: Record<string, OpeningHours>;
   slot_minutes: number;
   slot_step_minutes?: number;
   min_minutes?: number;

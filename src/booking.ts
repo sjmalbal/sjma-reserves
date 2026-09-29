@@ -79,22 +79,35 @@ export class BookingService {
 
   private dayBounds(day: DateTime): [DateTime, DateTime] {
     const midnight = day.startOf('day');
-    const opening = midnight.plus({ hours: this.settings.opening_hour });
-    const closing = this.settings.closing_hour === 24
-      ? midnight.plus({ days: 1 })
-      : midnight.plus({ hours: this.settings.closing_hour });
+    const hours = this.settings.weekly_hours?.[String(day.weekday)];
+    const parse = (value: string): number => {
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error('Horari setmanal no vàlid');
+      const [hour, minute] = value.split(':').map(Number);
+      return hour * 60 + minute;
+    };
+    const openMinutes = hours ? parse(hours.opening) : this.settings.opening_hour * 60;
+    const closeMinutes = hours ? parse(hours.closing) : this.settings.closing_hour * 60;
+    const at = (date: DateTime, value: number): DateTime => date.set({hour:Math.floor(value / 60),minute:value % 60});
+    const opening = at(midnight, openMinutes);
+    const closing = closeMinutes === 1440 || closeMinutes <= openMinutes
+      ? at(midnight.plus({days:1}), closeMinutes % 1440)
+      : at(midnight, closeMinutes);
     return [opening, closing];
   }
 
   private parseRange(startText: string, endText?: string): [DateTime, DateTime] {
     const start = this.parseTime(startText);
     const step = this.settings.slot_step_minutes ?? this.settings.slot_minutes;
-    const sinceOpen = start.hour * 60 + start.minute - this.settings.opening_hour * 60;
-    if (sinceOpen < 0 || sinceOpen % step !== 0 || start.second || start.millisecond) {
-      throw new RangeError('La hora no coincide con los turnos disponibles');
-    }
+    const today = this.dayBounds(start);
+    const yesterday = this.dayBounds(start.minus({days:1}));
+    const [opening, closing] = [today, yesterday].find(([open, close]) =>
+      minutes(start) >= minutes(open) && minutes(start) < minutes(close)) ?? today;
+    const sinceOpen = (minutes(start) - minutes(opening)) / 60_000;
+    if (sinceOpen < 0 || sinceOpen % step !== 0 || start.second || start.millisecond)
+      throw new RangeError('L’hora no coincidix amb els torns disponibles');
     const now = this.now();
-    if (minutes(start) <= minutes(now) || minutes(start) > minutes(now.plus({ days: this.settings.max_days_ahead }))) {
+    if (minutes(start) <= minutes(now)
+      || dateOnly(opening) > dateOnly(now.plus({ days: this.settings.max_days_ahead }))) {
       throw new RangeError('La fecha está fuera del plazo de reserva');
     }
     const end = endText ? this.parseTime(endText) : start.plus({ minutes: this.settings.slot_minutes });
@@ -102,9 +115,8 @@ export class BookingService {
     if (duration < (this.settings.min_minutes ?? this.settings.slot_minutes)
       || duration > (this.settings.max_minutes ?? this.settings.slot_minutes)
       || duration % step !== 0) throw new RangeError('La duració no està permesa');
-    const [opening, closing] = this.dayBounds(start);
     if (minutes(start) < minutes(opening) || minutes(end) > minutes(closing)) {
-      throw new RangeError('Fuera del horario de reserva');
+      throw new RangeError('Fora de l’horari de reserva');
     }
     return [start, end];
   }
@@ -298,7 +310,8 @@ export class BookingService {
     }
     return {
       date: dateOnly(date), rooms: output,
-      opening_hour: this.settings.opening_hour, closing_hour: this.settings.closing_hour,
+      opening_hour: opening.hour + opening.minute / 60,
+      closing_hour: closing.hour + closing.minute / 60,
       opening_at: iso(opening), closing_at: iso(closing), step_minutes: step,
       min_minutes: minimum, max_minutes: maximum,
     };

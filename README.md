@@ -4,6 +4,10 @@ Aplicació en **TypeScript**: servidor Node/Fastify, pàgina pública compilada 
 
 La web està publicada a <https://espais.sjmalbal.com> amb HTTPS. Les reserves públiques estan activades amb els valors configurables actuals. L'estat i la configuració del desplegament estan en [deploy/README.md](deploy/README.md).
 
+L'horari de reserves és de dilluns a dijous 08:30–22:00, divendres i dissabte 08:30–01:00 de l'endemà, i diumenge 09:00–13:00. Els recursos de Google Workspace continuen determinant quines franges d'eixe horari estan ocupades. La informació de protecció de dades específica del servei es publica a `/privacitat` i apareix resumida al formulari.
+
+La SJMA ha indicat que vol conservar indefinidament els registres de reserva amb dades personals. La pàgina de privacitat informa fidelment d'esta pràctica, però la proporcionalitat de conservar dades identificables sense termini concret requerix revisió jurídica abans de considerar l'avís definitivament validat.
+
 ## Posada en marxa local
 
 Cal Node.js 22 o superior. Des d'aquest directori:
@@ -22,7 +26,7 @@ El panell d'administració té una pàgina de login pròpia. La identitat s'auto
 
 ## Configuració i dades
 
-- `assets/config.example.json` conté valors de prova per a horari, duració i antelació. La configuració activa d'horari és `../.private/reservas-config.json`.
+- `assets/config.example.json` mostra l'horari setmanal, la duració i l'antelació. La configuració activa d'horari és `../.private/reservas-config.json`; `weekly_hours` usa les claus `1` (dilluns) a `7` (diumenge) i interpreta un tancament anterior a l'obertura com a hora de l'endemà.
 - Per defecte les reserves, el catàleg i les sessions d'administració es guarden en quatre taules noves de Supabase (`sjma_reservas_*`); les fotos públiques estan en el bucket `sjma-reserves-photos`. Els recursos i l'ocupació continuen en Google Workspace. `empleados.emp_admin` es consulta, però no es modifica.
 - `SJMA_DATA_BACKEND=sqlite npm start` recupera el mode local anterior. La còpia de les dades locals anterior a la migració es conserva en `../.private/backups/`. Si s'utilitzen tots dos modes per a fer reserves alhora, les bases divergiran; no s'ha d'activar eixe mode com a segon servidor públic.
 - El servidor llig `../.private/supabase-admin.json` amb `url` i `service_role_key` del projecte SJMA, o les variables `SJMA_SUPABASE_URL` i `SJMA_SUPABASE_SERVICE_ROLE_KEY`. El fitxer ha de ser privat (permisos `0600`) i la clau mai s'envia al navegador. Per a un domini públic amb HTTPS, configura `SJMA_PUBLIC_ORIGIN` i guarda un client OAuth de tipus web en `../.private/cliente-oauth-web.json` amb la URL `https://<domini>/admin/auth/callback` autoritzada. El client d'escriptori es manté per a l'ús local.

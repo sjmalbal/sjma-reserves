@@ -90,7 +90,6 @@ async function updateCatalogue() {
   let dayData: DayData | null=null;
   showNotice('');
   if ((duration || from || until) && !date) showNotice('Selecciona una data per filtrar per duració o horari.');
-  if (from && until && from>=until) { showNotice('L’hora final ha de ser posterior a la inicial.'); return; }
   if (date) {
     try { dayData=await fetchDay(date); }
     catch (error) {
@@ -112,8 +111,15 @@ async function updateCatalogue() {
     return starts.some(start => start.ends.some(end => {
       if (duration && end.minutes!==duration) return false;
       if (from && until) return start.time===from && end.time===until;
-      if (from && start.time<from) return false;
-      if (until && end.time>until) return false;
+      if (from && (Number(start.time.slice(0,2))*60+Number(start.time.slice(3,5))
+        +(start.value.slice(0,10)>date?1440:0)) < Number(from.slice(0,2))*60+Number(from.slice(3,5))) return false;
+      if (until) {
+        const clockMinutes=(time:string)=>Number(time.slice(0,2))*60+Number(time.slice(3,5));
+        const overnight=from ? until<=from : dayData!.closing_at.slice(0,10)>date && until<dayData!.opening_at.slice(11,16);
+        const untilMinutes=clockMinutes(until)+(overnight?1440:0);
+        const endMinutes=clockMinutes(end.time)+(end.value.slice(0,10)>date?1440:0);
+        if (endMinutes>untilMinutes) return false;
+      }
       return true;
     }));
   });

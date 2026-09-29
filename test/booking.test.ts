@@ -89,6 +89,34 @@ test('autumn clock change keeps both distinct 02:00 starts', async () => {
   service.close();
 });
 
+test('weekly opening hours include Friday and Saturday until 01:00 and Sunday morning', async () => {
+  const {settings,service,workspace}=fixture();
+  settings.weekly_hours={
+    '1':{opening:'08:30',closing:'22:00'},'2':{opening:'08:30',closing:'22:00'},
+    '3':{opening:'08:30',closing:'22:00'},'4':{opening:'08:30',closing:'22:00'},
+    '5':{opening:'08:30',closing:'01:00'},'6':{opening:'08:30',closing:'01:00'},
+    '7':{opening:'09:00',closing:'13:00'},
+  };
+  const friday=await service.dayAvailability('2026-10-02');
+  assert.match(friday.opening_at,/2026-10-02T08:30/);
+  assert.match(friday.closing_at,/2026-10-03T01:00/);
+  assert.ok(friday.rooms['aula-1'].starts.some(start=>start.value.startsWith('2026-10-03T00:30')));
+  assert.equal(friday.rooms['aula-1'].starts.some(start=>start.value.startsWith('2026-10-03T01:00')),false);
+  const sunday=await service.dayAvailability('2026-10-04');
+  assert.match(sunday.opening_at,/2026-10-04T09:00/);
+  assert.match(sunday.closing_at,/2026-10-04T13:00/);
+  assert.equal(sunday.rooms['aula-1'].starts.some(start=>start.time==='13:00'),false);
+  await assert.rejects(service.reserve({room:'aula-1',start:'2026-10-04T08:30:00+02:00',
+    end:'2026-10-04T09:00:00+02:00',name:'Anna',email:'anna@example.org'}),/hora|horari/i);
+  const overnight=await service.reserve({room:'aula-1',start:'2026-10-03T00:30:00+02:00',
+    end:'2026-10-03T01:00:00+02:00',name:'Anna',email:'anna@example.org'});
+  assert.equal(overnight.state,'confirmed');
+  assert.equal(workspace.mails.length,2);
+  await assert.rejects(service.reserve({room:'aula-1',start:'2026-10-03T01:00:00+02:00',
+    end:'2026-10-03T01:30:00+02:00',name:'Anna',email:'anna@example.org'}),/hora|horari/i);
+  service.close();
+});
+
 test('confirmed booking blocks overlaps and sends exactly two mails', async () => {
   const {workspace, service} = fixture();
   const input = {room:'aula-1',start:'2026-09-28T10:00:00+02:00',end:'2026-09-28T11:00:00+02:00',
@@ -181,6 +209,12 @@ test('Fastify keeps public booking writes disabled by default and protects admin
   const publicPage = await app.inject({url:'/'});
   assert.equal(publicPage.statusCode, 200);
   assert.match(publicPage.body, /Reserves temporalment tancades/);
+  assert.match(publicPage.body, /href="\/privacitat"/);
+  const privacyPage=await app.inject({url:'/privacitat'});
+  assert.equal(privacyPage.statusCode,200);
+  assert.match(privacyPage.body,/G46172268/);
+  assert.match(privacyPage.body,/Google Workspace/);
+  assert.match(privacyPage.body,/conserva indefinidament/);
   assert.equal((await app.inject({url:'/aules/aula-1'})).statusCode, 200);
   assert.equal((await app.inject({url:'/aules/aula-1/reserves/'+'a'.repeat(32)})).statusCode, 200);
   assert.equal((await app.inject({url:'/aules/aula-inexistent'})).statusCode, 404);

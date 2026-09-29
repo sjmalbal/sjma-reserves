@@ -1,0 +1,10 @@
+.policy{width:min(100%,840px);margin:0 auto;padding:34px 0 72px}
+.policy .back-button{display:inline-flex;align-items:center;text-decoration:none;font-size:13px;margin-bottom:24px}
+.policy h1{margin:6px 0 12px}
+.policy-intro{font-size:15px;color:var(--muted);margin:0 0 28px}
+.policy section{border-top:1px solid var(--line);padding:23px 0 20px}
+.policy section h2{font-size:19px;line-height:1.3;letter-spacing:-.03em;margin:0 0 12px}
+.policy section p{font-size:15px;line-height:1.7;margin:0 0 10px}
+.policy section p:last-child{margin-bottom:0}
+.policy a{text-decoration-thickness:1px;text-underline-offset:3px}
+@media(max-width:700px){.policy{padding:26px 0 50px}.policy h1{font-size:32px}.policy section{padding:20px 0}.policy section p{font-size:14px}}
