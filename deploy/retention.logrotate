@@ -1,0 +1,9 @@
+/var/log/sjma-reserves-retention.log {
+    weekly
+    size 1M
+    rotate 4
+    missingok
+    notifempty
+    compress
+    create 0640 root adm
+}

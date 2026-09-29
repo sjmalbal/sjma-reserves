@@ -133,7 +133,7 @@ export async function buildApp(options: AppOptions = {}) {
   app.get('/', async (_request, reply) => reply.type('text/html; charset=utf-8').send(await renderCatalogue()));
   app.get('/privacitat', async (_request, reply) => reply.type('text/html; charset=utf-8')
     .send(templates.render('privacy.html', {
-      retention_text: 'La SJMA conserva indefinidament el registre de cada reserva, incloses les dades personals facilitades, per a mantindre l’historial de l’ús dels espais i atendre incidències. No hi ha una supressió automàtica. Pots sol·licitar la supressió o la limitació de les teues dades personals a secretaria@sjmalbal.com; la SJMA atendrà la sol·licitud d’acord amb la normativa aplicable. Les còpies dels correus enviats es conserven en les bústies corresponents segons la gestió del correu de la SJMA i de cada destinatari.',
+      retention_text: 'Quan ha passat un any des de la finalització de la reserva, una tasca diària elimina automàticament el registre guardat en Supabase, incloses les dades personals. Això pot tardar fins a un dia addicional. Les còpies dels correus de confirmació es conserven en les bústies corresponents segons la gestió del correu de la SJMA i de cada destinatari; esta neteja no les elimina. L’esdeveniment de Google Calendar, que només conté la referència de la reserva, l’aula i l’horari, tampoc no forma part d’esta neteja. Pots sol·licitar l’accés, la supressió o la limitació de les teues dades personals a secretaria@sjmalbal.com; atendrem la sol·licitud d’acord amb la normativa aplicable.',
     })));
   app.get<{Params: {id: string}}>('/aules/:id', async (request, reply) => {
     await catalogue.refresh();

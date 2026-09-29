@@ -6,7 +6,7 @@ La web està publicada a <https://espais.sjmalbal.com> amb HTTPS. Les reserves p
 
 L'horari de reserves és de dilluns a dijous 08:30–22:00, divendres i dissabte 08:30–01:00 de l'endemà, i diumenge 09:00–13:00. Els recursos de Google Workspace continuen determinant quines franges d'eixe horari estan ocupades. La informació de protecció de dades específica del servei es publica a `/privacitat` i apareix resumida al formulari.
 
-La SJMA ha indicat que vol conservar indefinidament els registres de reserva amb dades personals. La pàgina de privacitat informa fidelment d'esta pràctica, però la proporcionalitat de conservar dades identificables sense termini concret requerix revisió jurídica abans de considerar l'avís definitivament validat.
+Els registres de reserva de Supabase s'eliminen diàriament quan ha passat un any des de la finalització de la reserva. La tasca no elimina els correus de les bústies ni els esdeveniments tècnics de Google Calendar. La pàgina de privacitat explica este abast.
 
 ## Posada en marxa local
 
@@ -43,6 +43,8 @@ npm run authorize -- write
 `read` s'ha de completar amb un compte que puga llistar recursos i consultar-ne l'ocupació; `write`, amb el compte organitzador configurat. La sessió d'escriptura actual ja s'ha autoritzat, així que no cal repetir-la per a l'ús local.
 
 `npm run retry-mail -- --booking-id REFERÈNCIA --retry-failed` reintenta només avisos que tenen un error definitiu. `npm run probe -- --confirmar-prueba-real` crea i elimina un esdeveniment real de prova: és una acció amb efectes en Workspace i cal decidir expressament quan fer-la.
+
+`npm run purge-old-bookings` mostra, sense esborrar, quants registres de Supabase han caducat. `npm run purge-old-bookings -- --apply` els elimina per lots de 500. En producció s'executa cada dia des de la VM segons `deploy/retention.cron`.
 
 `npm run probe-full -- --confirmar-prueba-real` prova el circuit HTTP de reserva amb un servidor local temporal que tinga `SJMA_ENABLE_BOOKINGS=1` i `SJMA_PORT=8767`. Usa el compte organitzador com a sol·licitant, envia els dos avisos reals, elimina l'esdeveniment i la fila de Supabase, comprova que l'aula queda lliure i envia a secretaria un missatge final que identifica l'avís anterior com a prova. Cal comprovar l'eixida del procés i que la neteja s'ha completat.
 

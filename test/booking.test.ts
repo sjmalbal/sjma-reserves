@@ -214,7 +214,8 @@ test('Fastify keeps public booking writes disabled by default and protects admin
   assert.equal(privacyPage.statusCode,200);
   assert.match(privacyPage.body,/G46172268/);
   assert.match(privacyPage.body,/Google Workspace/);
-  assert.match(privacyPage.body,/conserva indefinidament/);
+  assert.match(privacyPage.body,/ha passat un any des de la finalització/);
+  assert.match(privacyPage.body,/tasca diària elimina automàticament/);
   assert.equal((await app.inject({url:'/aules/aula-1'})).statusCode, 200);
   assert.equal((await app.inject({url:'/aules/aula-1/reserves/'+'a'.repeat(32)})).statusCode, 200);
   assert.equal((await app.inject({url:'/aules/aula-inexistent'})).statusCode, 404);

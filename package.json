@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "authorize": "tsx src/authorize.ts",
     "retry-mail": "tsx src/retryMail.ts",
+    "purge-old-bookings": "tsx src/purgeOldBookings.ts",
     "migrate-supabase": "tsx src/migrateSupabase.ts",
     "probe": "tsx src/probe.ts",
     "probe-full": "tsx src/probeFull.ts",

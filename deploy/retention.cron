@@ -1,0 +1,2 @@
+# VM in UTC. Run daily at 03:15 UTC; the script calculates the retention cutoff in Europe/Madrid.
+15 3 * * * root /usr/bin/flock -n /run/lock/sjma-reserves-retention.lock /usr/bin/docker exec sjma-reserves node dist/purgeOldBookings.js --apply >> /var/log/sjma-reserves-retention.log 2>&1
