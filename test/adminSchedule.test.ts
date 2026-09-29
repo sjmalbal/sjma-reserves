@@ -106,6 +106,26 @@ test('a resource decline rolls back a new block',async()=>{
   } finally { f.close(); }
 });
 
+test('block creation waits for delayed Workspace resource acceptance',async()=>{
+  const f=fixture();
+  try {
+    const originalGet=f.workspace.get.bind(f.workspace);
+    const originalBusy=f.workspace.busy.bind(f.workspace);
+    let reads=0;
+    f.workspace.get=async id=>{
+      const event=await originalGet(id);
+      reads++;
+      return reads<6 ? {...event,attendees:event.attendees?.map(item=>({...item,responseStatus:'needsAction'}))} : event;
+    };
+    f.workspace.busy=async (email,start,end)=>reads<6 ? [] : originalBusy(email,start,end);
+    const result=await f.schedule.createBlock({rooms:['aula-1'],start:`${f.day}T10:00`,
+      end:`${f.day}T11:00`,label:'Assaig',kind:'block'},'admin@example.org');
+    assert.ok(reads>=6);
+    assert.equal((await f.store.blocksByGroup(result.group_id)).length,1);
+    await f.schedule.cancelBlock(result.group_id,'admin@example.org');
+  } finally { f.close(); }
+});
+
 test('a failed Workspace rollback reports the group for manual review',async()=>{
   const f=fixture();
   try {

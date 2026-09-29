@@ -60,7 +60,8 @@ export class AdminSchedule {
   }
 
   private async eventAccepted(id:string,email:string,start:string,end:string):Promise<boolean> {
-    for (let attempt=0;attempt<5;attempt++) {
+    // Workspace resource calendars can take several seconds to reflect a new invite.
+    for (let attempt=0;attempt<20;attempt++) {
       const event=await this.workspace.get(id);
       if (resourceResponse(event,email)==='declined') return false;
       if (Date.parse(event.start?.dateTime??'')===Date.parse(start)
@@ -69,7 +70,7 @@ export class AdminSchedule {
       const busy=await this.workspace.busy(email,start,end);
       if (busy.some(interval=>Date.parse(interval.start)<=Date.parse(start)
         && Date.parse(interval.end)>=Date.parse(end))) return true;
-      await new Promise(resolve=>setTimeout(resolve,450));
+      if (attempt<19) await new Promise(resolve=>setTimeout(resolve,1500));
     }
     return false;
   }
